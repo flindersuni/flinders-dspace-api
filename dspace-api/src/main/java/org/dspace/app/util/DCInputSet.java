@@ -10,6 +10,7 @@ package org.dspace.app.util;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.apache.commons.lang3.StringUtils;
 import org.dspace.core.Utils;
@@ -17,7 +18,6 @@ import org.dspace.core.Utils;
  * Class representing all DC inputs required for a submission, organized into pages
  *
  * @author Brian S. Hughes, based on work by Jenny Toves, OCLC
- * @version $Revision$
  */
 
 public class DCInputSet {
@@ -34,7 +34,6 @@ public class DCInputSet {
      * constructor
      *
      * @param formName       form name
-     * @param mandatoryFlags
      * @param rows           the rows
      * @param listMap        map
      */
@@ -120,9 +119,12 @@ public class DCInputSet {
                             return true;
                         }
                     }
+                } else if (field.isRelationshipField() &&
+                    ("relation." + field.getRelationshipType()).equals(fieldName)) {
+                    return true;
                 } else {
                     String fullName = field.getFieldName();
-                    if (fullName.equals(fieldName)) {
+                    if (Objects.equals(fullName, fieldName)) {
                         return true;
                     }
                 }

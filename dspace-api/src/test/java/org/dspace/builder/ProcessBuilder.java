@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Set;
 
@@ -57,6 +58,11 @@ public class ProcessBuilder extends AbstractBuilder<Process, ProcessService> {
 
     public ProcessBuilder withProcessStatus(ProcessStatus processStatus) {
         process.setProcessStatus(processStatus);
+        return this;
+    }
+
+    public ProcessBuilder withCreationTime(Date creationTime) {
+        process.setCreationTime(creationTime);
         return this;
     }
 
@@ -107,6 +113,9 @@ public class ProcessBuilder extends AbstractBuilder<Process, ProcessService> {
     }
 
     public static void deleteProcess(Integer integer) throws SQLException, IOException {
+        if (integer == null) {
+            return;
+        }
         try (Context c = new Context()) {
             c.turnOffAuthorisationSystem();
             Process process = processService.find(c, integer);
