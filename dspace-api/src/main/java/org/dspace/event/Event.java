@@ -9,6 +9,7 @@ package org.dspace.event;
 
 import java.io.Serializable;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashMap;
@@ -79,7 +80,7 @@ public class Event implements Serializable {
     public static final int EVENT_MASK = 1; // mask of event type
 
     // XXX NOTE: keep this up to date with any changes to event (action) types.
-    protected static final String eventTypeText[] = {"CREATE", "MODIFY",
+    protected static final String[] eventTypeText = {"CREATE", "MODIFY",
         "MODIFY_METADATA", "ADD", "REMOVE", "DELETE", "INSTALL"};
 
     /** XXX NOTE: These constants must be kept synchronized * */
@@ -187,13 +188,13 @@ public class Event implements Serializable {
      * lifecycle versions of the changed objects in the context) would provide
      * for more complex consumer abilities that are beyond our purview.
      */
-    private String detail;
+    private EventDetail detail;
 
     /**
      * Contains all identifiers of the DSpaceObject that was changed (added,
      * modified, deleted, ...).
      *
-     * All events gets fired when a context that contains events gets commited.
+     * All events gets fired when a context that contains events gets committed.
      * When the delete event is fired, a deleted DSpaceObject is already gone.
      * This array contains all identifiers of the object, not only the handle
      * as the detail field does. The field may be an empty array if no
@@ -229,19 +230,22 @@ public class Event implements Serializable {
      */
     private static Logger log = org.apache.logging.log4j.LogManager.getLogger(Event.class);
 
+
     /**
      * Constructor.
      *
      * You should consider to use
-     * {@link Event#Event(int, int, UUID, java.lang.String)}.
+     * {@link Event#Event(int, int, UUID, Object, DetailType)}.
      *
      * @param eventType   action type, e.g. Event.ADD.
      * @param subjectType DSpace Object Type of subject e.g. Constants.ITEM.
      * @param subjectID   database ID of subject instance.
-     * @param detail      detail information that depends on context.
+     * @param detailObject  detail object information that depends on context.
+     * @param detailType  detail type information that depends on context.
      */
-    public Event(int eventType, int subjectType, UUID subjectID, String detail) {
-        this(eventType, subjectType, subjectID, detail, new ArrayList<String>());
+    public Event(int eventType, int subjectType, UUID subjectID, Object detailObject, DetailType detailType) {
+        this(eventType, subjectType, subjectID, detailObject, detailType,
+                new ArrayList<String>());
     }
 
     /**
@@ -250,15 +254,17 @@ public class Event implements Serializable {
      * @param eventType   action type, e.g. Event.ADD.
      * @param subjectType DSpace Object Type of subject e.g. Constants.ITEM.
      * @param subjectID   database ID of subject instance.
-     * @param detail      detail information that depends on context.
+     * @param detailObject  detail object information that depends on context.
+     * @param detailType  detail type information that depends on context.
      * @param identifiers array containing all identifiers of the dso or an empty array
      */
-    public Event(int eventType, int subjectType, UUID subjectID, String detail, ArrayList<String> identifiers) {
+    public Event(int eventType, int subjectType, UUID subjectID, Object detailObject,
+                 DetailType detailType, ArrayList<String> identifiers) {
         this.eventType = eventType;
         this.subjectType = coreTypeToMask(subjectType);
         this.subjectID = subjectID;
-        timeStamp = System.currentTimeMillis();
-        this.detail = detail;
+        timeStamp = Instant.now().toEpochMilli();
+        this.detail = new EventDetail(detailType, detailObject);
         this.identifiers = (ArrayList<String>) identifiers.clone();
     }
 
@@ -266,7 +272,89 @@ public class Event implements Serializable {
      * Constructor.
      *
      * You should consider to use
-     * {@link Event#Event(int, int, UUID, int, UUID, java.lang.String)} instead.
+     * {@link Event#Event(int, int, UUID, int, UUID, Object, DetailType)} instead.
+     *
+     * @param eventType   action type, e.g. Event.ADD.
+     * @param subjectType DSpace Object Type of subject e.g. Constants.ITEM.
+     * @param subjectID   database ID of subject instance.
+     * @param objectType  DSpace Object Type of object e.g. Constants.BUNDLE.
+     * @param objectID    database ID of object instance.
+     * @param detailObject  detail object information that depends on context.
+     * @param detailType  detail type information that depends on context.
+     */
+    public Event(int eventType, int subjectType, UUID subjectID, int objectType,
+                 UUID objectID, Object detailObject, DetailType detailType) {
+        this(eventType, subjectType, subjectID, objectType, objectID, detailObject, detailType,
+                new ArrayList<String>());
+    }
+
+    /**
+     * Constructor.
+     *
+     * @param eventType   action type, e.g. Event.ADD.
+     * @param subjectType DSpace Object Type of subject e.g. Constants.ITEM.
+     * @param subjectID   database ID of subject instance.
+     * @param objectType  DSpace Object Type of object e.g. Constants.BUNDLE.
+     * @param objectID    database ID of object instance.
+     * @param detailType  detail type information that depends on context.
+     * @param detailObject  detail object information that depends on context.
+     * @param identifiers array containing all identifiers of the dso or an empty array
+     */
+    public Event(int eventType, int subjectType, UUID subjectID, int objectType,
+                 UUID objectID, Object detailObject, DetailType detailType, ArrayList<String> identifiers) {
+        this.eventType = eventType;
+        this.subjectType = coreTypeToMask(subjectType);
+        this.subjectID = subjectID;
+        this.objectType = coreTypeToMask(objectType);
+        this.objectID = objectID;
+        timeStamp = Instant.now().toEpochMilli();
+        this.detail = new EventDetail(detailType, detailObject);
+        this.identifiers = (ArrayList<String>) identifiers.clone();
+    }
+
+    /**
+     * Constructor.
+     * Deprecated should use EventDetail instead of String for detail.
+     *
+     * You should consider to use
+     * {@link Event#Event(int, int, UUID, Object)}.
+     *
+     * @param eventType   action type, e.g. Event.ADD.
+     * @param subjectType DSpace Object Type of subject e.g. Constants.ITEM.
+     * @param subjectID   database ID of subject instance.
+     * @param detail      detail information that depends on context.
+     */
+    @Deprecated
+    public Event(int eventType, int subjectType, UUID subjectID, Object detail) {
+        this(eventType, subjectType, subjectID, detail, new ArrayList<String>());
+    }
+
+    /**
+     * Constructor.
+     * Deprecated should use EventDetail instead of String for detail.
+     *
+     * @param eventType   action type, e.g. Event.ADD.
+     * @param subjectType DSpace Object Type of subject e.g. Constants.ITEM.
+     * @param subjectID   database ID of subject instance.
+     * @param detail      detail information that depends on context.
+     * @param identifiers array containing all identifiers of the dso or an empty array
+     */
+    @Deprecated
+    public Event(int eventType, int subjectType, UUID subjectID, Object detail, ArrayList<String> identifiers) {
+        this.eventType = eventType;
+        this.subjectType = coreTypeToMask(subjectType);
+        this.subjectID = subjectID;
+        timeStamp = Instant.now().toEpochMilli();
+        this.detail = new EventDetail(DetailType.INFO, detail);
+        this.identifiers = (ArrayList<String>) identifiers.clone();
+    }
+
+    /**
+     * Constructor.
+     * Deprecated should use EventDetail instead of String for detail.
+     *
+     * You should consider to use
+     * {@link Event#Event(int, int, UUID, int, UUID, Object)} instead.
      *
      * @param eventType   action type, e.g. Event.ADD.
      * @param subjectType DSpace Object Type of subject e.g. Constants.ITEM.
@@ -275,14 +363,16 @@ public class Event implements Serializable {
      * @param objectID    database ID of object instance.
      * @param detail      detail information that depends on context.
      */
+    @Deprecated
     public Event(int eventType, int subjectType, UUID subjectID, int objectType,
-                 UUID objectID, String detail) {
+                 UUID objectID, Object detail) {
         this(eventType, subjectType, subjectID, objectType, objectID, detail,
              new ArrayList<String>());
     }
 
     /**
      * Constructor.
+     * Deprecated should use EventDetail instead of String for detail.
      *
      * @param eventType   action type, e.g. Event.ADD.
      * @param subjectType DSpace Object Type of subject e.g. Constants.ITEM.
@@ -292,16 +382,13 @@ public class Event implements Serializable {
      * @param detail      detail information that depends on context.
      * @param identifiers array containing all identifiers of the dso or an empty array
      */
+    @Deprecated
     public Event(int eventType, int subjectType, UUID subjectID, int objectType,
-                 UUID objectID, String detail, ArrayList<String> identifiers) {
-        this.eventType = eventType;
-        this.subjectType = coreTypeToMask(subjectType);
-        this.subjectID = subjectID;
-        this.objectType = coreTypeToMask(objectType);
-        this.objectID = objectID;
-        timeStamp = System.currentTimeMillis();
-        this.detail = detail;
-        this.identifiers = (ArrayList<String>) identifiers.clone();
+                 UUID objectID, Object detail, ArrayList<String> identifiers) {
+        this(eventType, subjectType, subjectID,
+                objectType, objectID,
+                detail, DetailType.INFO,
+                (ArrayList<String>) identifiers.clone());
     }
 
     /**
@@ -535,7 +622,7 @@ public class Event implements Serializable {
     /**
      * @return value of detail element of the event.
      */
-    public String getDetail() {
+    public EventDetail getDetail() {
         return detail;
     }
 
@@ -589,7 +676,7 @@ public class Event implements Serializable {
     public boolean pass(List<int[]> filters) {
         boolean result = false;
 
-        for (int filter[] : filters) {
+        for (int[] filter : filters) {
             if ((subjectType & filter[SUBJECT_MASK]) != 0 && (eventType & filter[EVENT_MASK]) != 0) {
                 result = true;
             }

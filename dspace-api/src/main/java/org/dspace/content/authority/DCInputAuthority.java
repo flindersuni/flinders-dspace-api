@@ -30,7 +30,7 @@ import org.dspace.core.SelfNamedPlugin;
  * configurable submission.
  *
  * Configuration:
- * This MUST be configured aas a self-named plugin, e.g.:
+ * This MUST be configured as a self-named plugin, e.g.:
  * {@code
  * plugin.selfnamed.org.dspace.content.authority.ChoiceAuthority = \
  * org.dspace.content.authority.DCInputAuthority
@@ -66,7 +66,7 @@ public class DCInputAuthority extends SelfNamedPlugin implements ChoiceAuthority
      * The map of the input form reader associated to use for a specific java locale
      */
     private static Map<Locale, DCInputsReader> dcis = null;
-    private static String pluginNames[] = null;
+    private static String[] pluginNames = null;
 
     public DCInputAuthority() {
         super();
@@ -87,7 +87,7 @@ public class DCInputAuthority extends SelfNamedPlugin implements ChoiceAuthority
             initPluginNames();
         }
 
-        return (String[]) ArrayUtils.clone(pluginNames);
+        return ArrayUtils.clone(pluginNames);
     }
 
     private static synchronized void initPluginNames() {
@@ -179,7 +179,7 @@ public class DCInputAuthority extends SelfNamedPlugin implements ChoiceAuthority
         String[] labelsLocale = labels.get(currentLocale.getLanguage());
         for (int i = 0; i < valuesLocale.length; ++i) {
             if (text.equalsIgnoreCase(valuesLocale[i])) {
-                Choice v[] = new Choice[1];
+                Choice[] v = new Choice[1];
                 v[0] = new Choice(String.valueOf(i), valuesLocale[i], labelsLocale[i]);
                 return new Choices(v, 0, v.length, Choices.CF_UNCERTAIN, false, 0);
             }
